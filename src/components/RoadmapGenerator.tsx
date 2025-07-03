@@ -23,7 +23,8 @@ export const RoadmapGenerator = () => {
     setConversation(prev => [...prev, { from: 'user', text: userInput }]);
 
     try {
-      const response = await fetch('http://localhost:8000/api/conversation', {
+      const response = await fetch('https://airoadmapgenerator.azurewebsites.net/api/conversation', {    // http://localhost:8000/api/conversation - for local testing
+        // Replace with your backend API endpoint
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ user_input: userInput }),
