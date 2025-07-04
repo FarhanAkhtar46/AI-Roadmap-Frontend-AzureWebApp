@@ -16,6 +16,14 @@ export const RoadmapGenerator = () => {
   // Inside your component:
   const navigate = useNavigate();
 
+  const [sessionId] = useState(() => {
+    // Use a random string or UUID for session
+    return Math.random().toString(36).substring(2);
+  });
+
+
+
+
   const handleSend = async () => {
     if (!userInput.trim()) return;
     setIsGenerating(true);
@@ -27,7 +35,7 @@ export const RoadmapGenerator = () => {
         // Replace with your backend API endpoint
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_input: userInput }),
+        body: JSON.stringify({ user_input: userInput, session_id: sessionId }),
       });
       const data = await response.json();
       console.log('API response:', data);
