@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Lightbulb, Target } from 'lucide-react';
+import { Sparkles, Lightbulb, Target, RefreshCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { RoadmapVisualization } from './RoadmapVisualization';
 
@@ -16,13 +16,7 @@ export const RoadmapGenerator = () => {
   // Inside your component:
   const navigate = useNavigate();
 
-  const [sessionId] = useState(() => {
-    // Use a random string or UUID for session
-    return Math.random().toString(36).substring(2);
-  });
-
-
-
+  
 
   const handleSend = async () => {
     if (!userInput.trim()) return;
@@ -31,11 +25,10 @@ export const RoadmapGenerator = () => {
     setConversation(prev => [...prev, { from: 'user', text: userInput }]);
 
     try {
-      const response = await fetch('https://airoadmapgenerator.azurewebsites.net/api/conversation', {    // http://localhost:8000/api/conversation - for local testing
-        // Replace with your backend API endpoint
+      const response = await fetch('https://airoadmapgenerator.azurewebsites.net/api/conversation', {     //http://localhost:8000/api/conversation - for localhost
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_input: userInput, session_id: sessionId }),
+        body: JSON.stringify({ user_input: userInput }),
       });
       const data = await response.json();
       console.log('API response:', data);
@@ -60,6 +53,20 @@ export const RoadmapGenerator = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Reset conversation both frontend and backend
+  const handleResetConversation = async () => {
+    try {
+      await fetch('http://localhost:8000/api/reset_conversation', { method: 'POST' });
+    } catch (e) {
+      // Optionally handle error
+    }
+    setConversation([]);
+    setCurrentPrompt('What domain would you like a roadmap for?');
+    setUserInput('');
+    setGeneratedRoadmap(null);
+    setGeneratedHtmlPath(null);
   };
 
   return (
@@ -117,24 +124,33 @@ export const RoadmapGenerator = () => {
                   <Target className="w-5 h-5" />
                   <span className="text-sm">{conversation.length + 1}</span>
                 </div>
-                
-                <Button
-                  onClick={handleSend}
-                  disabled={!userInput.trim() || isGenerating}
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:transform-none"
-                >
-                  {isGenerating ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      <span>Generating...</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center space-x-2">
-                      <Sparkles className="w-5 h-5" />
-                      <span>Send</span>
-                    </div>
-                  )}
-                </Button>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    onClick={handleResetConversation}
+                    className="bg-red-500 hover:bg-red-600 text-white flex items-center"
+                    type="button"
+                  >
+                    <RefreshCcw className="w-4 h-4 mr-1" />
+                    Reset Conversation
+                  </Button>
+                  <Button
+                    onClick={handleSend}
+                    disabled={!userInput.trim() || isGenerating}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:transform-none"
+                  >
+                    {isGenerating ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                        <span>Generating...</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-2">
+                        <Sparkles className="w-5 h-5" />
+                        <span>Send</span>
+                      </div>
+                    )}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
