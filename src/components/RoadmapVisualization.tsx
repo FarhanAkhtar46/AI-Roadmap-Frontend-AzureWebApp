@@ -13,6 +13,7 @@ interface Module {
   prerequisites: string;
   dependencies: string[];
   resources: Resource[];
+  objectives?: string[];
 }
 
 interface Resource {
@@ -72,9 +73,23 @@ export const RoadmapVisualization: React.FC<RoadmapProps> = ({ roadmap }) => {
               </div>
             </CardHeader>
             <CardContent className="p-6 grid gap-4">
-              {module.description && (
+              {(module.description || (Array.isArray(module.objectives) && module.objectives.length > 0)) && (
                 <div>
-                  <p className="text-gray-700 italic mb-2">{module.description}</p>
+                  {module.description && (
+                    <p className="text-gray-700 italic mb-2">{module.description}</p>
+                  )}
+                  {Array.isArray(module.objectives) && module.objectives.length > 0 && (
+                    <>
+                      <h4 className="font-semibold text-gray-700 mb-2 flex items-center">
+                        <List className="w-5 h-5 mr-2 text-green-600" />Objectives
+                      </h4>
+                      <ul className="list-disc list-inside text-gray-600 space-y-1">
+                        {module.objectives.map((obj, idx) => (
+                          <li key={idx}>{obj}</li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
                 </div>
               )}
               {module.prerequisites && (
