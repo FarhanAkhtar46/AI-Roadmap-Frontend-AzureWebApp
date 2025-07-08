@@ -13,52 +13,61 @@ export const RoadmapGenerator = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedRoadmap, setGeneratedRoadmap] = useState(null);
   const [generatedHtmlPath, setGeneratedHtmlPath] = useState<string | null>(null);
-  // Inside your component:
+  const [error, setError] = useState<string | null>(null);
+  const [lastUserInput, setLastUserInput] = useState<string>('');
   const navigate = useNavigate();
 
   
 
-  const handleSend = async () => {
-    if (!userInput.trim()) return;
+  const handleSend = async (inputOverride?: string) => {
+    const inputToSend = inputOverride !== undefined ? inputOverride : userInput;
+    if (!inputToSend.trim()) return;
     setIsGenerating(true);
+    setError(null);
+    setLastUserInput(inputToSend);
 
-    setConversation(prev => [...prev, { from: 'user', text: userInput }]);
+    setConversation(prev => [...prev, { from: 'user', text: inputToSend }]);
 
     try {
-      const response = await fetch('https://airoadmapgenerator.azurewebsites.net/api/conversation', {     //http://localhost:8000/api/conversation - for localhost
+      const response = await fetch('https://airoadmapgenerator.azurewebsites.net/api/conversation', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ user_input: userInput }),
+        body: JSON.stringify({ user_input: inputToSend }),
       });
+      if (!response.ok) {
+        throw new Error('Server error');
+      }
       const data = await response.json();
       console.log('API response:', data);
 
       if (typeof data === 'string') {
-        // It's a follow-up question
         setCurrentPrompt(data);
         setConversation(prev => [...prev, { from: 'bot', text: data }]);
         setUserInput('');
       } else if (typeof data === 'object' && data.roadmap) {
-        // It's the final roadmap
         setGeneratedRoadmap(data.roadmap);
         setCurrentPrompt('');
         setConversation([]);
       } else if (typeof data === 'object' && data.html_path) {
-        // Fix slashes and make absolute URL
-        const htmlUrl = `http://localhost:8000/${data.html_path.replace(/\\\\/g, "/")}`;
+        const htmlUrl = `http://localhost:8000/${data.html_path.replace(/\\/g, "/")}`;
         navigate('/roadmap', { state: { htmlUrl } });
       }
+      setError(null); // clear error on success
     } catch (error) {
-      alert('Failed to communicate with backend');
+      setError('Something went wrong. Please try again.');
     } finally {
       setIsGenerating(false);
     }
   };
 
+  const handleRetry = () => {
+    handleSend(lastUserInput);
+  };
+
   // Reset conversation both frontend and backend
   const handleResetConversation = async () => {
     try {
-      await fetch('https://airoadmapgenerator.azurewebsites.net/api/reset_conversation', { method: 'POST' });
+      await fetch('http://localhost:8000/api/reset_conversation', { method: 'POST' });
     } catch (e) {
       // Optionally handle error
     }
@@ -93,6 +102,15 @@ export const RoadmapGenerator = () => {
         <div className="max-w-4xl mx-auto mb-12">
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/50">
             <div className="flex flex-col space-y-4">
+              {/* Error message */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-100 text-red-700 rounded flex items-center justify-between">
+                  <span>{error}</span>
+                  <Button onClick={handleRetry} className="ml-4 bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded">
+                    Retry
+                  </Button>
+                </div>
+              )}
               {/* Conversation history */}
               {conversation.length > 0 && (
                 <div className="mb-4">
@@ -110,7 +128,10 @@ export const RoadmapGenerator = () => {
                   <Input
                     placeholder={currentPrompt}
                     value={userInput}
-                    onChange={(e) => setUserInput(e.target.value)}
+                    onChange={(e) => {
+                      setUserInput(e.target.value);
+                      setError(null); // clear error on input change
+                    }}
                     className="text-lg p-6 rounded-xl border-2 border-purple-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 transition-all duration-300"
                     onKeyDown={e => { if (e.key === 'Enter') handleSend(); }}
                     disabled={isGenerating}
@@ -134,7 +155,7 @@ export const RoadmapGenerator = () => {
                     Reset Conversation
                   </Button>
                   <Button
-                    onClick={handleSend}
+                    onClick={() => handleSend()}
                     disabled={!userInput.trim() || isGenerating}
                     className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-3 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:transform-none"
                   >
