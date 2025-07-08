@@ -67,7 +67,7 @@ export const RoadmapGenerator = () => {
   // Reset conversation both frontend and backend
   const handleResetConversation = async () => {
     try {
-      await fetch('http://localhost:8000/api/reset_conversation', { method: 'POST' });
+      await fetch('https://airoadmapgenerator.azurewebsites.net/api/reset_conversation', { method: 'POST' });
     } catch (e) {
       // Optionally handle error
     }
